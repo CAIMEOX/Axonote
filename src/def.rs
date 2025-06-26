@@ -1,4 +1,5 @@
 use core::str;
+use biblatex::Bibliography;
 use markdown::mdast::{Code, Image, Link, Node as MNode};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -8,6 +9,8 @@ pub struct AxonoteGraph {
     pub meta: Option<Metadata>,
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
+    #[serde(skip)]
+    pub bibliography: Option<Bibliography>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -16,6 +19,7 @@ pub struct Metadata {
     pub author: Option<String>,
     pub date: Option<String>,
     pub css: Option<String>,
+    
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -46,7 +50,8 @@ pub struct Entry {
     key: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     author: Option<String>,
-    title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     year: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -1,17 +1,20 @@
 use crate::def::{AxonoteGraph, Edge, Metadata, Node, NodeAttributes, TypedNode};
 use anyhow::Result;
+use biblatex::Bibliography;
 use markdown::{
     ParseOptions,
     mdast::{Link, Node as MNode, Paragraph, Root},
     to_mdast,
 };
-use yaml_rust2::YamlLoader;
+use yaml_rust2::{Yaml, YamlLoader};
 
 fn parse_options() -> ParseOptions {
     markdown::ParseOptions {
         constructs: markdown::Constructs {
             frontmatter: true,
             math_flow: true,
+            gfm_footnote_definition: false,
+            gfm_label_start_footnote: true,
             ..markdown::Constructs::mdx()
         },
         ..Default::default()
@@ -41,6 +44,7 @@ impl AxonoteGraph {
             meta: None,
             nodes: Vec::new(),
             edges: Vec::new(),
+            bibliography: None,
         }
     }
 
@@ -77,15 +81,29 @@ impl AxonoteGraph {
         Ok(json)
     }
 
+    fn load_bib(&mut self, yaml: &Yaml) -> Result<()> {
+        if let Some(path) = yaml["bibliography"].as_str() {
+            let file = std::fs::read_to_string(path)?;
+            let bib = Bibliography::parse(&file).map_err(anyhow::Error::msg)?;
+            self.bibliography = Some(bib);
+        }
+        Ok(())
+    }
+
     fn load_meta(&mut self, yaml: &str) -> Result<()> {
-        let doc = &YamlLoader::load_from_str(yaml)?[0];
+        let doc: &Yaml = &YamlLoader::load_from_str(yaml)?[0];
+        let css = if let Some(path) = doc["css"].as_str() {
+            Some(std::fs::read_to_string(path)?)
+        } else {
+            None
+        };
         self.meta = Some(Metadata {
             title: doc["title"].as_str().map(str::to_string),
             author: doc["author"].as_str().map(str::to_string),
             date: doc["date"].as_str().map(str::to_string),
-            css: doc["css"].as_str().map(str::to_string),
+            css,
         });
-        Ok(())
+        self.load_bib(doc)
     }
 
     fn links_to_edges(&mut self, links: &[&Link], from: &str) {
@@ -100,26 +118,24 @@ impl AxonoteGraph {
         let mut w_name: Option<NodeMeta> = None;
         let mut w_nodes: Vec<&MNode> = vec![];
         for (_i, child) in root.children.iter().enumerate() {
+            dbg!(child);
             match child {
                 MNode::Yaml(yaml) => self.load_meta(&yaml.value)?,
-                MNode::Heading(data) if data.depth == 1 => {
-                    let data = data.children.get(0);
-                    match data {
-                        Some(MNode::Text(text)) => {
-                            if let Some(name) = w_name.take() {
-                                self.add_node(name, std::mem::take(&mut w_nodes));
-                            }
-                            w_name = Some(NodeMeta::new(text.value.clone()));
+                MNode::Heading(data) if data.depth == 1 => match data.children.get(0) {
+                    Some(MNode::Text(text)) => {
+                        if let Some(name) = w_name.take() {
+                            self.add_node(name, std::mem::take(&mut w_nodes));
                         }
-                        _ => {
-                            return Err(anyhow::anyhow!(
-                                "collect: Expected a text node in heading, found: {:?}",
-                                data
-                            ));
-                        }
+                        w_name = Some(NodeMeta::new(text.value.clone()));
                     }
-                }
-                MNode::Paragraph(para) => match extract_links(para) {
+                    data => {
+                        return Err(anyhow::anyhow!(
+                            "collect: Expected a text node in heading, found: {:?}",
+                            data
+                        ));
+                    }
+                },
+                MNode::Paragraph(para) => match extract_links_with_prefix(para, "#") {
                     Some(links) => {
                         if let Some(ref meta) = w_name {
                             self.links_to_edges(&links, &meta.id);
@@ -136,7 +152,7 @@ impl AxonoteGraph {
                     w_nodes.push(child)
                 }
 
-                _ => {}
+                MNode::FootnoteDefinition(_) | _ => {}
             }
         }
         self.add_node(w_name.unwrap(), std::mem::take(&mut w_nodes));
@@ -167,12 +183,15 @@ pub fn canonicalize_id(id: &str) -> String {
     id.trim().replace([' ', '\n', '\r'], "-").to_lowercase()
 }
 
-pub fn extract_links(node: &Paragraph) -> Option<Vec<&Link>> {
+pub fn extract_links_with_prefix<'a>(
+    node: &'a Paragraph,
+    prefix: &'a str,
+) -> Option<Vec<&'a Link>> {
     let links: Vec<&Link> = node
         .children
         .iter()
         .filter_map(|child| match child {
-            MNode::Link(link) if link.url.starts_with('#') => Some(link),
+            MNode::Link(link) if link.url.starts_with(prefix) => Some(link),
             _ => None,
         })
         .collect();

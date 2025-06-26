@@ -4,7 +4,7 @@ mod compile;
 mod def;
 
 fn main() {
-    let nodes = read_parse("data/solar.md");
+    let nodes = read_parse("data/bib.md");
     println!("{}", nodes.unwrap());
 }
 
