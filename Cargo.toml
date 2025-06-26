@@ -1,0 +1,13 @@
+[package]
+name = "mindown"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+biblatex = "0.10.0"
+markdown = "1.0.0"
+regex = "1.11.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.140"
+yaml-rust2 = "0.10.3"
