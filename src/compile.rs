@@ -1,9 +1,10 @@
-use crate::def::{AxonoteGraph, Edge, Metadata, Node, NodeAttributes, TypedNode};
+use crate::def::{AxonoteGraph, Edge, Entry, Ext, Metadata, Node, NodeAttributes, TypedNode};
+use crate::utils::{canonicalize_id, extract_links_with_prefix};
 use anyhow::Result;
-use biblatex::Bibliography;
+use biblatex::{Bibliography, Chunk, Spanned};
 use markdown::{
     ParseOptions,
-    mdast::{Link, Node as MNode, Paragraph, Root},
+    mdast::{Link, Node as MNode, Root},
     to_mdast,
 };
 use yaml_rust2::{Yaml, YamlLoader};
@@ -48,7 +49,7 @@ impl AxonoteGraph {
         }
     }
 
-    fn add_node(&mut self, meta: NodeMeta, nodes: Vec<&MNode>) {
+    fn add_node(&mut self, meta: NodeMeta, nodes: Vec<Ext>) {
         let typed_node = match nodes.as_slice() {
             [] => TypedNode::Text(meta.original_text.clone()),
             [x] => TypedNode::node_transform((*x).clone()),
@@ -114,9 +115,43 @@ impl AxonoteGraph {
         }
     }
 
+    fn get_entry(&self, ref_: &Link) -> Result<Entry> {
+        let stringify = |t: &[Spanned<Chunk>]| {
+            t.iter()
+                .map(|s| s.v.to_biblatex_string(false))
+                .collect::<String>()
+        };
+        if let Some(bib) = &self.bibliography {
+            if let Some(entry) = bib.get(&ref_.url[1..]) {
+                let key = entry.key.to_string();
+                let author = entry
+                    .author()
+                    .map(|a| a.iter().map(|b| b.name.to_string()).collect())
+                    .ok();
+                let title: Option<String> = entry.title().ok().map(stringify);
+                let year: Option<String> = entry.get("year").map(stringify);
+                let doi: Option<String> = entry.get("doi").map(stringify);
+                Ok(Entry {
+                    key,
+                    author,
+                    title,
+                    year,
+                    doi,
+                })
+            } else {
+                Err(anyhow::anyhow!(
+                    "get_entry: Entry not found for reference: {}",
+                    ref_.url
+                ))
+            }
+        } else {
+            Err(anyhow::anyhow!("get_entry: No bibliography loaded"))
+        }
+    }
+
     fn collect(&mut self, root: Root) -> Result<()> {
         let mut w_name: Option<NodeMeta> = None;
-        let mut w_nodes: Vec<&MNode> = vec![];
+        let mut w_nodes: Vec<Ext> = vec![];
         for (_i, child) in root.children.iter().enumerate() {
             dbg!(child);
             match child {
@@ -145,11 +180,18 @@ impl AxonoteGraph {
                             ));
                         }
                     }
-                    None => w_nodes.push(child),
+                    None => match extract_links_with_prefix(para, "^") {
+                        Some(refs) if refs.len() == 1 => {
+                            let entry = self.get_entry(refs[0])?;
+                            let ext_node = Ext::Typed(TypedNode::Bibliography(entry));
+                            w_nodes.push(ext_node);
+                        }
+                        _ => w_nodes.push(Ext::M(child)),
+                    },
                 },
 
                 MNode::Code(_) | MNode::Math(_) | MNode::Image(_) | MNode::List(_) => {
-                    w_nodes.push(child)
+                    w_nodes.push(Ext::M(child))
                 }
 
                 MNode::FootnoteDefinition(_) | _ => {}
@@ -177,24 +219,4 @@ pub fn compile(input: &str) -> Result<String> {
             ast
         )),
     }
-}
-
-pub fn canonicalize_id(id: &str) -> String {
-    id.trim().replace([' ', '\n', '\r'], "-").to_lowercase()
-}
-
-pub fn extract_links_with_prefix<'a>(
-    node: &'a Paragraph,
-    prefix: &'a str,
-) -> Option<Vec<&'a Link>> {
-    let links: Vec<&Link> = node
-        .children
-        .iter()
-        .filter_map(|child| match child {
-            MNode::Link(link) if link.url.starts_with(prefix) => Some(link),
-            _ => None,
-        })
-        .collect();
-
-    if links.is_empty() { None } else { Some(links) }
 }

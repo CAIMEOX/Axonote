@@ -2,6 +2,7 @@ use anyhow::Result;
 use crate::compile::compile;
 mod compile;
 mod def;
+mod utils;
 
 fn main() {
     let nodes = read_parse("data/bib.md");

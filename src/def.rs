@@ -1,5 +1,5 @@
-use core::str;
 use biblatex::Bibliography;
+use core::str;
 use markdown::mdast::{Code, Image, Link, Node as MNode};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -19,7 +19,6 @@ pub struct Metadata {
     pub author: Option<String>,
     pub date: Option<String>,
     pub css: Option<String>,
-    
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -47,15 +46,15 @@ pub enum TypedNode {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Entry {
-    key: String,
+    pub key: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    author: Option<String>,
+    pub author: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    title: Option<String>,
+    pub title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    year: Option<String>,
+    pub year: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    doi: Option<String>,
+    pub doi: Option<String>,
 }
 
 impl Default for TypedNode {
@@ -65,23 +64,33 @@ impl Default for TypedNode {
 }
 
 impl TypedNode {
-    pub fn node_transform(node: MNode) -> Self {
+    pub fn node_transform(node: Ext) -> Self {
         match node {
-            MNode::Text(text) => TypedNode::Text(text.value),
-            MNode::Paragraph(_) => TypedNode::Text(node.to_string()),
-            MNode::Math(formula) => TypedNode::Formula(formula.value),
-            MNode::Image(Image { title, url, .. }) => TypedNode::Image { title, url },
-            MNode::Link(Link { title, url, .. }) => TypedNode::Link { title, url },
-            MNode::Code(Code { lang, value, .. }) => TypedNode::CodeBlock { lang, code: value },
-            MNode::ListItem(item) => TypedNode::node_transform(item.children[0].clone()),
-            MNode::List(items) => TypedNode::List(
+            Ext::M(MNode::Text(text)) => TypedNode::Text(text.value.clone()),
+            Ext::M(MNode::Paragraph(_)) => TypedNode::Text("Paragraph content".to_string()),
+            Ext::M(MNode::Math(formula)) => TypedNode::Formula(formula.value.clone()),
+            Ext::M(MNode::Image(Image { title, url, .. })) => TypedNode::Image {
+                title: title.clone(),
+                url: url.clone(),
+            },
+            Ext::M(MNode::Link(Link { title, url, .. })) => TypedNode::Link {
+                title: title.clone(),
+                url: url.clone(),
+            },
+            Ext::M(MNode::Code(Code { lang, value, .. })) => TypedNode::CodeBlock {
+                lang: lang.clone(),
+                code: value.clone(),
+            },
+            Ext::M(MNode::ListItem(item)) => TypedNode::node_transform(Ext::M(&item.children[0])),
+            Ext::M(MNode::List(items)) => TypedNode::List(
                 items
                     .children
                     .iter()
-                    .map(|node: &MNode| TypedNode::node_transform(node.clone()))
+                    .map(|node: &MNode| TypedNode::node_transform(Ext::M(node)))
                     .collect(),
             ),
-            _ => TypedNode::Text("node_transform: Unsupported node type".to_string()),
+            Ext::Typed(typed_node) => typed_node,
+            _ => TypedNode::Text("Unsupported node type".to_string()),
         }
     }
 }
@@ -116,4 +125,10 @@ pub struct Edge {
     pub target_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Ext<'a> {
+    M(&'a MNode),
+    Typed(TypedNode),
 }
