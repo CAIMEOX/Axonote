@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "title": "Axonote Demo: The Solar System",
+    "author": "CAIMEOX",
+    "date": "2025-6-11",
+    "css": null
+  },
+  "nodes": [
+    {
+      "id": "the-solar-system",
+      "title": "The Solar System ",
+      "raw": {
+        "type": "Text",
+        "data": "Our solar system.\nConsists of\nCentral Star"
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "sun",
+      "title": "Sun ",
+      "raw": {
+        "type": "Text",
+        "data": "The Sun is a G-type main-sequence star."
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "planets",
+      "title": "Planets ",
+      "raw": {
+        "type": "Text",
+        "data": "Eight planets."
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "inner-planets",
+      "title": "Inner Planets",
+      "raw": {
+        "type": "List",
+        "data": [
+          {
+            "type": "Text",
+            "data": "Mercury"
+          },
+          {
+            "type": "Text",
+            "data": "Venus"
+          },
+          {
+            "type": "Text",
+            "data": "Earth Moon Details"
+          },
+          {
+            "type": "Text",
+            "data": "Mars"
+          }
+        ]
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "earthsmoon",
+      "title": "EarthsMoon ",
+      "raw": {
+        "type": "Text",
+        "data": "The Earth's only natural satellite."
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "outer-planets",
+      "title": "Outer-Planets",
+      "raw": {
+        "type": "List",
+        "data": [
+          {
+            "type": "Text",
+            "data": "Jupiter"
+          },
+          {
+            "type": "Text",
+            "data": "Saturn"
+          }
+        ]
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "a-node-with-spaces",
+      "title": "A Node With Spaces",
+      "raw": {
+        "type": "Text",
+        "data": "This node links to"
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "node-with-only-id",
+      "title": "Node With Only ID ",
+      "raw": {
+        "type": "Text",
+        "data": "Content here."
+      },
+      "style": {},
+      "position": null
+    },
+    {
+      "id": "another-node",
+      "title": "Another Node",
+      "raw": {
+        "type": "Text",
+        "data": "Link to"
+      },
+      "style": {},
+      "position": null
+    }
+  ],
+  "edges": [
+    {
+      "id": 0,
+      "source_id": "planets",
+      "target_id": "inner-planets"
+    },
+    {
+      "id": 1,
+      "source_id": "planets",
+      "target_id": "outer-planets"
+    },
+    {
+      "id": 0,
+      "source_id": "a-node-with-spaces",
+      "target_id": "the-solar-system"
+    }
+  ]
+}
