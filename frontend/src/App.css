@@ -355,6 +355,9 @@ body {
   font-size: 12px;
   color: #586069;
   margin-bottom: 8px;
+  /* auto new line hack */
+  width: 270px;
+  overflow-wrap: break-word;
 }
 .entry-meta span {
   display: flex;

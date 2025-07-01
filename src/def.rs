@@ -33,13 +33,28 @@ pub struct Node {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "data")]
 pub enum TypedNode {
-    Text(String),
+    Text {
+        title: Option<String>,
+        text: String,
+    },
     Formula(String),
-    Image { title: Option<String>, url: String },
-    Link { title: Option<String>, url: String },
+    Image {
+        title: Option<String>,
+        url: String,
+    },
+    Link {
+        title: Option<String>,
+        url: String,
+    },
     Bibliography(Entry),
-    List(Vec<TypedNode>),
-    CodeBlock { lang: Option<String>, code: String },
+    List {
+        items: Vec<TypedNode>,
+        ordered: bool,
+    },
+    CodeBlock {
+        lang: Option<String>,
+        code: String,
+    },
     Table(Table),
     MarkdownDocument(String),
 }
@@ -59,15 +74,24 @@ pub struct Entry {
 
 impl Default for TypedNode {
     fn default() -> Self {
-        TypedNode::Text(String::new())
+        TypedNode::Text {
+            title: None,
+            text: String::new(),
+        }
     }
 }
 
 impl TypedNode {
     pub fn node_transform(node: Ext) -> Self {
         match node {
-            Ext::M(MNode::Text(text)) => TypedNode::Text(text.value.clone()),
-            Ext::M(MNode::Paragraph(_)) => TypedNode::Text("Paragraph content".to_string()),
+            Ext::M(MNode::Text(text)) => TypedNode::Text {
+                title: None,
+                text: text.value.clone(),
+            },
+            Ext::M(MNode::Paragraph(para)) => TypedNode::Text {
+                title: None,
+                text: MNode::Paragraph(para.to_owned()).to_string(),
+            },
             Ext::M(MNode::Math(formula)) => TypedNode::Formula(formula.value.clone()),
             Ext::M(MNode::Image(Image { title, url, .. })) => TypedNode::Image {
                 title: title.clone(),
@@ -82,15 +106,19 @@ impl TypedNode {
                 code: value.clone(),
             },
             Ext::M(MNode::ListItem(item)) => TypedNode::node_transform(Ext::M(&item.children[0])),
-            Ext::M(MNode::List(items)) => TypedNode::List(
-                items
+            Ext::M(MNode::List(items)) => TypedNode::List {
+                items: items
                     .children
                     .iter()
                     .map(|node: &MNode| TypedNode::node_transform(Ext::M(node)))
                     .collect(),
-            ),
+                ordered: items.ordered,
+            },
             Ext::Typed(typed_node) => typed_node,
-            _ => TypedNode::Text("Unsupported node type".to_string()),
+            _ => TypedNode::Text {
+                title: Some("Error".to_string()),
+                text: "Unsupported node type".to_string(),
+            },
         }
     }
 }

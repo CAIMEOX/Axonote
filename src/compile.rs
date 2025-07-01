@@ -51,7 +51,10 @@ impl AxonoteGraph {
 
     fn add_node(&mut self, meta: NodeMeta, nodes: Vec<Ext>) {
         let typed_node = match nodes.as_slice() {
-            [] => TypedNode::Text(meta.original_text.clone()),
+            [] => TypedNode::Text {
+                title: Some(meta.id.clone()),
+                text: meta.original_text.clone(),
+            },
             [x] => TypedNode::node_transform((*x).clone()),
             _xs => todo!(
                 "add_node: more than one element in nodes is not supported yet {:?}",

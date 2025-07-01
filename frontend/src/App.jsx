@@ -76,110 +76,6 @@ function MindMap() {
     );
   }, []);
 
-  // Initialize the root node
-  useState(() => {
-    const nodeId = "root";
-
-    const bibNode = {
-      id: "einstein1905",
-      type: "bibliography",
-      position: { x: 350, y: 0 },
-      data: {
-        key: "einstein1905",
-        author: "Einstein, A.",
-        title: "On the Electrodynamics of Moving Bodies",
-        year: "1905",
-        doi: "10.1002/andp.19053221004",
-      },
-    };
-
-    const imageNode = {
-      id: "imageNode",
-      type: "image",
-      position: { x: 350, y: 200 },
-      data: {
-        url: "https://placehold.co/300x200?text=Axonote",
-        title: "Image Node",
-      },
-      style: { width: 300 }, // Initial width
-    };
-
-    const rootNode = {
-      id: nodeId,
-      type: "text",
-      position: { x: 0, y: 200 },
-      data: {
-        title: "Root Paragraph",
-        text: `<p>This is a text block. You can use <strong>HTML</
-strong> tags like <em>emphasis</em>.</p>`,
-        onTextChange: (id, text) => updateNodeData(id, { text }),
-      },
-    };
-
-    const listNode = {
-      id: "listNode",
-      type: "list",
-      position: { x: 700, y: 0 },
-      data: {
-        title: "Example List",
-        listItems: [
-          { type: "Text", data: "Item 1 Hello" },
-          { type: "Formula", data: "c = \\pm\\sqrt{a^2 + b^2}" },
-          {
-            type: "Link",
-            url: "https://example.com",
-            title: "Example Link",
-          },
-          {
-            type: "Image",
-            url: "https://placehold.co/300x200?text=List+Image",
-            title: "List Image",
-          },
-        ],
-      },
-    };
-
-    const formulaNode = {
-      id: "formulaNode",
-      type: "formula",
-      position: { x: 700, y: 200 },
-      data: {
-        formula: "c = \\pm\\sqrt{a^2 + b^2}",
-        onFormulaChange: (id, formula) => updateNodeData(id, { formula }),
-      },
-    };
-
-    rootNode.data.onEdit = () => handleEditClick(rootNode);
-
-    setNodes([rootNode, bibNode, imageNode, listNode, formulaNode]);
-    setEdges([
-      {
-        id: `e-${nodeId}-${bibNode.id}`,
-        source: nodeId,
-        target: bibNode.id,
-        type: "smoothstep",
-      },
-      {
-        id: `e-${nodeId}-${imageNode.id}`,
-        source: nodeId,
-        target: imageNode.id,
-        type: "smoothstep",
-      },
-      {
-        id: `e-${bibNode.id}-${listNode.id}`,
-        source: bibNode.id,
-        target: listNode.id,
-        type: "smoothstep",
-      },
-      {
-        id: `<e-1>nodeId</e-1>-${formulaNode.id}`,
-        source: nodeId,
-        target: formulaNode.id,
-        type: "smoothstep",
-      },
-    ]);
-  }, []);
-
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
@@ -232,12 +128,12 @@ strong> tags like <em>emphasis</em>.</p>`,
           break;
         case "Text":
           nodeType = "text";
+          console.log(n.raw)
           data = {
             title: n.title || "Untitled Text",
-            text: n.raw.data,
+            text: n.raw.data.text,
             onTextChange: (id, text) => updateNodeData(id, { text }),
           };
-          baseNode.style = { width: 320, height: 180 };
           break;
         case "List":
           nodeType = "list";
@@ -286,6 +182,12 @@ strong> tags like <em>emphasis</em>.</p>`,
     setEdges(newEdges);
   };
 
+  // Initialize the root node
+  useState(async () => {
+    const data = exampleData;
+    handleApplyJson(data);
+  }, []);
+
   const handleAddNode = (type) => {
     if (!selectedNode) return;
 
@@ -313,7 +215,7 @@ strong> tags like <em>emphasis</em>.</p>`,
           type: "image",
           position,
           data: imageData,
-          style: { width: 300 }, 
+          style: { width: 300 },
         };
         break;
       case "text":

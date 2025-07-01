@@ -6,7 +6,12 @@ mod utils;
 
 fn main() {
     let nodes = read_parse("data/bib.md");
-    println!("{}", nodes.unwrap());
+    if let Ok(content) = nodes {
+        std::fs::write("frontend/src/assets/example.json", content)
+            .expect("Failed to write to frontend/src/assets/example.json");
+    } else {
+        eprintln!("Error reading or parsing file: {:?}", nodes);
+    }
 }
 
 fn read_parse(file_path: &str) -> Result<String> {
