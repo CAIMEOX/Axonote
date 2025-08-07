@@ -57,6 +57,7 @@ function MindMap() {
   const [edges, setEdges] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { getNodes, getEdges, fitView } = useReactFlow();
 
   // Effect to keep track of the selected node
@@ -184,8 +185,19 @@ function MindMap() {
 
   // Initialize the root node
   useState(async () => {
-    const data = exampleData;
-    handleApplyJson(data);
+    setIsLoading(true);
+    try {
+      const data = exampleData;
+      handleApplyJson(data);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await handleLayout();
+
+      // Ensure fitView animation completes
+      await new Promise((resolve) => setTimeout(resolve, 900));
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const handleAddNode = (type) => {
@@ -323,6 +335,12 @@ function MindMap() {
 
   return (
     <div style={{ height: "100vh", width: "100vw" }}>
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+          <span>Loading...</span>
+        </div>
+      )}
       <Toolbar
         onAddFormulaNode={() => handleAddNode("formula")}
         onAddListNode={() => handleAddNode("list")}
