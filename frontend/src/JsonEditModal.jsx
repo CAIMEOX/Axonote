@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { FiX } from "react-icons/fi";
 
+import "./JsonEditModal.css";
+
 export default function JsonEditModal({ exampleData, onSave, onClose }) {
   const [jsonText, setJsonText] = useState(
     JSON.stringify(exampleData, null, 2)
