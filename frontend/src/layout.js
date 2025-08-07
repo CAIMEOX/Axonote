@@ -17,8 +17,8 @@ export const getLayoutedElements = async (nodes, edges, options = {}) => {
     layoutOptions: layoutOptions,
     children: nodes.map((node) => ({
       id: node.id,
-      width: node.width || node.style?.width || 300,
-      height: node.height || node.style?.height || 150,
+      width: node.measured?.width || node.style?.width || 300,
+      height: node.measured?.height || node.style?.height || 150,
     })),
     edges: edges.map((edge) => ({
       id: edge.id,
